@@ -1,0 +1,58 @@
+digraph servicescatalog{
+node [shape="Mrecord", style="filled", color="#6699ff", fillcolor="#ececff",
+fontsize="10"];
+
+subgraph cluster_servicescatalog {
+label="Services catalog";
+
+"services-catalog" -> {"acme-application" "other-applications..."};
+
+  subgraph cluster_acmeapplication{
+    label="Acme Application";
+
+    "acme-application" -> { "acme-webapp"  "acme-database"};
+
+    subgraph cluster_acmewebapp{
+      label="Acme Webapp";
+      "acme-webapp" -> {"acme-dns" "acme-web-scenarios"};
+    };
+
+    subgraph cluster_acmedatabase{
+      label="Acme Database";
+      "acme-database" -> {"acme-database-account"};
+    };
+
+  };
+
+};
+
+subgraph cluster_componentscatalog {
+label="Components catalog";
+
+  subgraph cluster_dnsserver{
+    label="DNS Server Pool";
+    "acme-dns" -> {"dns-server"};
+    "dns-server" -> {"dns-package" "dns-daemon"};
+  };
+
+  subgraph cluster_httpserver{
+    label="Web Server Pool";
+    "acme-webapp" -> {"http-server"};
+    "http-server" -> {"http-package" "http-daemon"};
+  };
+
+  subgraph cluster_dbserver{
+    label="Database Server Pool";
+    "acme-database" -> {"database-server"};
+    "database-server" -> {"databas-package" "database-daemon"};
+  };
+
+  subgraph cluster_linuxserver{
+    label="Linux Server";
+    {"dns-server" "http-server" "database-server"} -> "linux-server";
+    "linux-server" -> {"linux-filesystem" "ping"};
+  };
+};
+
+}
+

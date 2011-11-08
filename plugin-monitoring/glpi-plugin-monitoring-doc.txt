@@ -1,0 +1,176 @@
+= User documentation for Monitoring plugin for GLPI
+Fabrice_Flore-Thébault <fab@centsix.org>
+:lang: en
+
+== Notions
+
+Monitoring must make the junction between business needs for a description of
+the state of the catalog of services, and technical available solutions to
+mesure the state of the services.
+
+=== *Services catalog* (ITIL)
+
+On the business side, services are listed in a catalog.
+
+Each *service* is defined by :
+
+. A description of the service
+. Timeframes or service level agreement for fulfilling the service
+. Who is entitled to request/view the service
+. Costs (if any)
+. How to fulfill the service
+
+We have to define more precisely the last point to produce metrics.
+
+=== Components catalog, *Resources*:: Shinken collection of +service+, +check+, +business rule+
+
+On the technical side, for shinken a +service+ can be defined by :
+
+* a single +check+, applied on : +host_name+ OR  +hostgroup_name+ OR
+  +servicegroups+ 
+
+* a business rule (+bp_rule!+), which is a collection of defined
+  (+service+,+host_name+)
+
+=== Objectives
+
+* Final objective: Display status of the *Services catalog*;
+
+* Configure metrics and their impact;
+
+* Make the link between *Services* and *Resources*
+
+=== Example Service catalog 
+
+* Linux Hosts -> service is the group of hosts having Linux as OS
+* Windows Hosts
+* MySQL servers
+* Applications servers
+* HR Application
+* Production Web Application
+
+==== User Story 1: Production Web Application
+
+Description:: web application for acme.tld
+
+SLA:: every monitored resources should be up 
+
+Who:: technicians
+
+How to fullfill the service:: to monitor the service, necessary informations are
+defined and checks are ok
+
+===== Define the FQDN, necessary accounts and other informations:
+
+  * +domain-name+: acme.tld
+
+  * +dns-server-primary+, +dns-server-secondary+ (same for all production servers)
+  
+  * +http-server+: http-cluster-prod (used for production web)
+
+  * +mysql-server+: mysql-prod-01 (specific to this service)
+
+  * +mysql-account+: +mysql-database-name+, +mysql-user-name+ and
+  +mysql-password+ (only for this application)
+
+===== These resources are available
+
+  DNS:: +dns-server-primary+ OR +dns-server-secondary+ are serving +domain-name+
+
+         check_command    bp_rule!(dns1,serverA | dns2,serverB)
+         
+  HTTP:: OK on  +domain-name+
+
+    * generic checks for a *linux-server* are OK on defined server
+
+       ** filesystems are not full
+       ** RAID is OK
+       ** ...
+
+    * generic checks for an *http-server* are OK on defined server
+
+       ** http-server package installed on defined http-server
+       ** http service started on defined http-server
+       ** ...
+
+    * specific checks for +domain-name+
+
+       ** play scenario: login OK
+       ** play scenario: send contact email : OK
+       ** ...
+
+  MySQL:: OK on +domain-name+
+
+    * generic checks for a *linux-server* are OK on defined server
+
+       ** (same as above)
+
+    * generic checks for a *mysql-server* are OK on defined mysql-server
+
+       ** mysql package installed on defined mysql-server
+       ** mysql service started on defined mysql-server
+
+    * specific checks for +mysql-database-name+
+
+       ** defined mysql account is working
+       ** play scenario : read / write some data 
+    
+
+[graphviz]
+----
+
+include::diagrams/servicecatalog.dot[]
+
+----
+
+server1 is automatically member of linux-server (inventory)
+server1 is declared member of http-server (group for components view)
+server1 is declared member of "acme-webapp" pool of server (business rules)
+server2 is automatically member of "linux-server" (inventory)
+server2 is declared member of "database-server" (group for components view)
+server2 is declared member of "acme-database" (business rules)
+
+
+==== User Story 2: Director's workplace
+
+* description : it resources for the director
+* SLA : every monitored resources should be up 
+* who : technicians, director
+* costs (furture release)
+* how to fullfill the service: 
+   * define: computer and devices attributed to director
+   * computer of director is up and generic checks are OK
+     * given that he has windows desktop : windows updates OK, antivirus OK
+     * given that he has access to a list of applications : applications OK
+   * printer OK : is UP, has paper and toner
+   * network access OK
+   * user accound OK
+
+==== User Story 3 : All Desktops for internal workers
+
+* description : all desktops for internal workers
+* SLA : 70% of monitored resources should be up 
+* who : technicians
+* costs (furture release)
+* how to fullfill the service: 
+   * define: computer for internal desktop users
+   * computer of director is up and generic checks are OK
+     * given that he has windows desktop : windows updates OK, antivirus OK
+     * given that he has access to a list of applications : applications OK
+
+==== User Story 4 : Production switches
+
+for each switch:
+* port 0 and port 1 are connected
+* bandwidth =< 80 %
+* cpu =< 70%
+
+
+=== possible implementation :
+1. define group of resources "production switches"
+2. define resources to apply to this group
+3. add production switches to group
+   * manually
+   * dynamically using rules : every switch matching this criteria is a
+   * production switch
+
